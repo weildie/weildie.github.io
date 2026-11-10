@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blockwelt</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <meta name="theme-color" content="#2f4a26" />
+    <style>
+      :root { color-scheme: dark; --bg: #2b2e36; --card: #1b1d23; --fg: #f1f1f1; --muted: #a9adb8; --accent: #6cbf4a; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
+      #app canvas { display: block; }
+      #landing { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: radial-gradient(circle at 50% 30%, #3b4f2f, #1b1d23 70%); overflow: auto; }
+      body.started #landing, body.in-xr #landing { display: none; }
+      .card { max-width: 560px; width: 100%; background: rgba(27, 29, 35, 0.92); border-radius: 18px; padding: 28px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+      h1 { margin: 0 0 6px; font-size: 34px; letter-spacing: 0.5px; }
+      h1 span { color: var(--accent); }
+      p { color: var(--muted); line-height: 1.5; }
+      .buttons { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0 8px; }
+      button.big { flex: 1 1 200px; font-size: 18px; font-weight: 600; padding: 16px 18px; border-radius: 12px; border: 0; cursor: pointer; }
+      #start-xr { background: var(--accent); color: #10200a; }
+      #start-xr:disabled { background: #4a4f5a; color: #9a9ea8; cursor: not-allowed; }
+      #start-desktop { background: #3a3f4a; color: var(--fg); }
+      #xr-info { font-size: 14px; }
+      details { margin-top: 14px; color: var(--muted); font-size: 14px; }
+      details summary { cursor: pointer; color: var(--fg); }
+      details li { margin: 4px 0; }
+      a { color: var(--accent); }
+      #hud { display: none; }
+      body.in-desktop #hud { display: block; }
+      #hotbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px; background: rgba(15, 16, 20, 0.75); border-radius: 12px; max-width: calc(100vw - 32px); overflow-x: auto; }
+      .slot { width: 52px; height: 54px; flex: 0 0 auto; border: 2px solid #3a3f4a; background: rgba(60, 64, 76, 0.6); border-radius: 8px; cursor: pointer; padding: 0; display: grid; place-items: center; }
+      .slot.active { border-color: #f2f2f2; background: rgba(120, 128, 146, 0.6); }
+      .slot canvas { image-rendering: pixelated; width: 44px; height: 46px; }
+      #slotname { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: rgba(15, 16, 20, 0.75); padding: 4px 12px; border-radius: 8px; font-size: 14px; }
+      #help { position: fixed; top: 12px; left: 12px; background: rgba(15, 16, 20, 0.7); padding: 10px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; color: #d8dbe2; }
+      #help b { color: #fff; }
+      #toast { position: fixed; top: 18%; left: 50%; transform: translate(-50%, -10px); background: rgba(20, 22, 28, 0.85); padding: 14px 24px; border-radius: 14px; text-align: center; opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; display: flex; flex-direction: column; gap: 4px; }
+      #toast.show { opacity: 1; transform: translate(-50%, 0); }
+      #toast b { font-size: 20px; }
+      #toast span { color: var(--muted); font-size: 14px; }
+      @media (max-width: 700px) { #help { display: none; } }
+    </style>
+    <script type="module" crossorigin src="./assets/index-B8TXnyPa.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div id="landing">
+      <div class="card">
+        <h1>Block<span>welt</span></h1>
+        <p>Verwandelt deine Wohnung in eine Blockwelt. Die Meta Quest 3 erkennt Boden, Wände, Fenster und Möbel aus dem Raum-Setup, und daraus werden Gras, Steinziegel, Glas und Holz. Hinter den Fenstern liegt eine Landschaft. Du kannst Blöcke abbauen und neue setzen.</p>
+        <div class="buttons">
+          <button class="big" id="start-xr" disabled>Wohnung verwandeln</button>
+          <button class="big" id="start-desktop">Vorschau im Browser</button>
+        </div>
+        <div id="xr-info">Prüfe Mixed-Reality-Unterstützung …</div>
+        <p id="emu-info" hidden>Quest-3-Emulator aktiv · Raum: <b id="emu-room"></b></p>
+        <details>
+          <summary>Ohne Quest testen (Emulator)</summary>
+          <p>Emuliert eine Quest 3 mit virtueller Wohnung (Wände, Fenster, Möbel, Raum-Mesh):</p>
+          <ul>
+            <li><a href="?emulate&room=sunlit_living_room">Wohnzimmer</a> · <a href="?emulate&room=bedroom">Schlafzimmer</a> · <a href="?emulate&room=kitchen">Küche</a> · <a href="?emulate&room=home_office">Arbeitszimmer</a> · <a href="?emulate&room=music_studio">Musikzimmer</a></li>
+            <li>Ältere echte Raumscans: <a href="?emulate&room=living_room">living_room</a> · <a href="?emulate&room=office_small">office_small</a></li>
+          </ul>
+          <p>Rechts unten erscheint die Emulator-Steuerung. Mit dem <b>Play-Modus</b> steuerst du Kopf und Controller mit Maus und Tastatur.</p>
+        </details>
+        <details>
+          <summary>Steuerung im Headset</summary>
+          <ul>
+            <li><b>Trigger</b>: ausgewählten Block setzen bzw. mit der Spitzhacke abbauen</li>
+            <li><b>Grifftaste</b>: Block abbauen (immer)</li>
+            <li><b>Thumbstick links/rechts</b>: Block in der Werkzeugleiste wählen, oder auf die Leiste zeigen und Trigger drücken</li>
+            <li><b>A / X</b>: Durchblick (echte Wohnung scheint durch)</li>
+            <li><b>B / Y</b>: Außenwelt an/aus</li>
+            <li><b>Hände</b>: Zeigen und Daumen-Zeigefinger zusammenführen</li>
+          </ul>
+        </details>
+        <details>
+          <summary>Voraussetzung</summary>
+          <p>Auf der Quest muss das <b>Raum-Setup</b> eingerichtet sein (Einstellungen → Physischer Raum → Raum-Setup). Beim Start fragt der Browser nach Zugriff auf die Raumdaten. Bitte erlauben.</p>
+        </details>
+      </div>
+    </div>
+
+    <div id="hud">
+      <div id="help">
+        <b>Linksklick</b> setzen / Spitzhacke · <b>Rechtsklick</b> abbauen<br />
+        <b>Ziehen</b> umsehen · <b>Scrollen</b> zoomen<br />
+        <b>1–0, Q/E, Shift+Scroll</b> Block wählen<br />
+        <b>T</b> Durchblick · <b>O</b> Außenwelt · <b>R</b> neu verwandeln
+      </div>
+      <div id="slotname"></div>
+      <div id="hotbar"></div>
+    </div>
+    <div id="toast"></div>
+
+  </body>
+</html>

@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "de.weildie.blockwelt",
+      "sha256_cert_fingerprints": ["77:07:D3:C7:30:64:7F:2F:D8:22:FE:10:70:18:83:A5:2A:A4:A2:9D:5A:AB:6E:6F:D3:2A:15:E5:95:FF:2E:B4"]
+    }
+  }
+]
